@@ -1,0 +1,10 @@
+C:\KoyoM_Socket\bin\KoyoM_Socket.exe
+C:\KoyoM_Socket\bin\KoyoM_Socket.pdb
+C:\KoyoM_Socket\bin\KoyoM_Socket.xml
+C:\KoyoM_Socket\obj\Release\ResolveAssemblyReference.cache
+C:\KoyoM_Socket\obj\Release\KoyoM_Socket.Form1.resources
+C:\KoyoM_Socket\obj\Release\KoyoM_Socket.Resources.resources
+C:\KoyoM_Socket\obj\Release\KoyoM_Socket.vbproj.GenerateResource.Cache
+C:\KoyoM_Socket\obj\Release\KoyoM_Socket.exe
+C:\KoyoM_Socket\obj\Release\KoyoM_Socket.xml
+C:\KoyoM_Socket\obj\Release\KoyoM_Socket.pdb

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="SHIFT-JIS"?>
+<configuration>
+  <connectionString>
+    User ID=KRCP;Password=KRCP;Data Source=XE;
+  </connectionString>
+  <myPort>
+    8888
+  </myPort>
+  <ipAdd>
+    10.1.1.55
+  </ipAdd>
+</configuration>
