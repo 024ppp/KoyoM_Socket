@@ -3,7 +3,7 @@
         COMMAND_LENGTH = 3
         SAG
         KIK
-        AM1
+        KOB
         UPD
         ERR
     End Enum

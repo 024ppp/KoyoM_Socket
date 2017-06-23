@@ -33,9 +33,8 @@ Public Class DBAction
     End Property
 
     '作業者取得
-    Public Function getSagyoName() As String
+    Public Function getSagyoName(ByRef names As String) As Boolean
         Dim strSQL As String = ""
-        Dim sSagyoName As String = ""
         Dim ds As New clsDsCtrl
 
         Try
@@ -46,19 +45,23 @@ Public Class DBAction
 
             Call ds.Connect()
             Call ds.ExecuteSQL(strSQL, "")
-            'm_DT = ds.DataTable
+
+            If ds.DataTable.Rows.Count <= 0 Then
+                m_ErrMsg = "作業者名取得エラー。"
+                Return False
+            End If
 
             For Each dtRow As DataRow In ds.DataTable.Rows
-                If Not sSagyoName.Equals("") Then
-                    sSagyoName &= ","
+                If Not names.Equals("") Then
+                    names &= ","
                 End If
-                sSagyoName &= dtRow.Item("TNTNAM").ToString
+                names &= dtRow.Item("TNTNAM").ToString
             Next
 
-            Return sSagyoName
-        Catch ex As SqlException
+            Return True
+        Catch ex As Exception
             m_ErrMsg = ex.Message
-            Return ""
+            Return False
         Finally
             Call ds.Dispose()
         End Try
@@ -68,7 +71,6 @@ Public Class DBAction
     Public Function checkKikai(ByVal strKikai As String) As Boolean
         Dim strSQL As String = ""
         Dim ds As New clsDsCtrl
-        Dim result As Boolean = False
 
         Try
             strSQL = " SELECT * "
@@ -81,134 +83,63 @@ Public Class DBAction
             Call ds.Connect()
             Call ds.ExecuteSQL(strSQL, "")
 
-            If ds.DataTable.Rows.Count > 0 Then
-                result = True
+            If ds.DataTable.Rows.Count <= 0 Then
+                m_ErrMsg = "機械Noが存在しません。"
+                Return False
             End If
 
-            'For Each dtRow As DataRow In ds.DataTable.Rows
-            '    sVkonNo = dtRow.Item("VKONNO").ToString
-            'Next
-
-            Return result
-        Catch ex As SqlException
+            Return True
+        Catch ex As Exception
             m_ErrMsg = ex.Message
-            Return result
+            Return False
         Finally
             Call ds.Dispose()
         End Try
     End Function
 
-    'MV01更新
-    Public Function Update(ByVal strUpdText As String) As Boolean
+    '処理粉情報を取得
+    Public Function getSyoriInfo(ByVal sKokban As String _
+                               , ByRef sSfcd As String _
+                               , ByRef sZainmk As String) As Boolean
         Dim strSQL As String = ""
-        Dim strArrUpdText As String() = Nothing
-        Dim sVal As String = ""
-        Dim sWhere As String = ""
-
         Dim ds As New clsDsCtrl
 
         Try
-            strArrUpdText = strUpdText.Split(",")
-            sVal = createSqlText(strArrUpdText, 0)
-            sWhere = createSqlText(strArrUpdText, 1)
-
-            If sVal.Equals("") Or sWhere.Equals("") Then
-                Return False
+            If Not IsNumeric(sKokban) Then
+                Return ""
             End If
 
-            'SQL文作成
-            strSQL &= " UPDATE MV01 SET "
-            strSQL &= " UPDYMD = '" & Now.ToString("yyyyMMdd") & "' "
-            strSQL &= " ,UPDHMS = '" & Now.ToString("HHmmss") & "' "
-            strSQL &= sVal
-            strSQL &= " WHERE "
-            strSQL &= sWhere
+            strSQL = " SELECT SFCD,ZAINMK "
+            strSQL &= " FROM MD01@MTRSLINK "
+            strSQL &= " WHERE 1 = 1 "
+            If sKokban <> "" Then
+                strSQL &= " AND KOKBAN = '" & sKokban & "' "
+            End If
 
             Call ds.Connect()
             Call ds.ExecuteSQL(strSQL, "")
+
+            If ds.DataTable.Rows.Count <= 0 Then
+                m_ErrMsg = "工管番号が存在しません。"
+                Return False
+            End If
+
+            For Each dtRow As DataRow In ds.DataTable.Rows
+                sSfcd = dtRow.Item("SFCD").ToString
+                sZainmk = dtRow.Item("ZAINMK").ToString
+            Next
+
             Return True
-        Catch ex As Exception
+        Catch ex As SqlException
             m_ErrMsg = ex.Message
             Return False
+        Finally
+            Call ds.Dispose()
         End Try
     End Function
 
-    'iCmd = 0 : SET句
-    'iCmd = 1 : WHERE句
-    Private Function createSqlText(ByVal arr As String(), ByVal iCmd As Integer) As String
-        Dim txt As String = ""
-        Dim arrCmdText As New ArrayList                    '受信したコマンド文字
-        Dim arrExcludeCmdText As New ArrayList             'コマンド文字を除いた文字
-        Dim cmdLen As Integer = ProcessCommand.pc.COMMAND_LENGTH
-
-        Try
-            '引数を分解
-            For i As Integer = 0 To arr.Length - 1
-                arrCmdText.Add(Left(arr(i), cmdLen))
-                arrExcludeCmdText.Add(Mid(arr(i), cmdLen + 1))
-            Next
-
-            '分解した引数を使い、SQL文を作成
-            For i As Integer = 0 To arrCmdText.Count - 1
-                '該当するコマンド文字を持つ部分を抽出
-                Select Case iCmd
-                    Case 0
-                        If arrCmdText(i).Equals(ProcessCommand.pc.AM1.ToString) Then
-                            'SET句は無条件でカンマ付け
-                            'addDelimiter(txt, iCmd)
-                            txt &= " , "
-                            txt &= arrCmdText(i) & " = " & arrExcludeCmdText(i)
-                        End If
-
-                    Case 1
-                        If arrCmdText(i).Equals(ProcessCommand.pc.KIK.ToString) Then
-                            addDelimiter(txt, iCmd)
-                            txt &= arrCmdText(i) & " = '" & arrExcludeCmdText(i) & "'"
-                        End If
-
-                    Case Else
-                        Return ""
-                End Select
-            Next
-
-            'コマンド文字を、テーブルのフィールド名に置き換える
-            txt = txt.Replace(ProcessCommand.pc.AM1.ToString, "MESY")
-            txt = txt.Replace(ProcessCommand.pc.KIK.ToString, "KIKNAM")
-
-            Return txt
-        Catch ex As Exception
-            Return ""
-        End Try
-    End Function
-
-    Private Sub addDelimiter(ByRef txt As String, ByVal iCmd As Integer)
-        Select Case iCmd
-            Case 0
-                If Not txt.Equals("") Then
-                    txt &= " , "
-                End If
-            Case 1
-                If Not txt.Equals("") Then
-                    txt &= " AND "
-                End If
-        End Select
-    End Sub
-
-    '未使用
-    Private Function replaceCmdText(ByVal txt As String) As String
-        Dim sBuf As String = ""
-        Try
-            sBuf = txt.Replace(ProcessCommand.pc.AM1.ToString, "MESY")
-            sBuf = txt.Replace(ProcessCommand.pc.KIK.ToString, "VKONNO")
-
-            Return sBuf
-        Catch ex As Exception
-            Return ""
-        End Try
-    End Function
-
-    '枠網取得
-    Public Function getWakuAmi(ByVal strSyoriFunn As String) As Integer
+    '処理粉情報を取得
+    Public Function getWakuAmi(ByVal strSfcd As String, ByRef sWakuami As String) As Boolean
         Dim strSQL As String = ""
         Dim ds As New clsDsCtrl
 
@@ -216,19 +147,79 @@ Public Class DBAction
             strSQL = " SELECT * "
             strSQL &= " FROM MM11K@MTRSLINK "
             strSQL &= " WHERE SUTBAN = 1 "
-            If strSyoriFunn <> "" Then
-                strSQL &= " AND SFCOD = '" & strSyoriFunn & "' "
+            If strSfcd <> "" Then
+                strSQL &= " AND SFCOD = '" & strSfcd & "' "
             End If
 
             Call ds.Connect()
             Call ds.ExecuteSQL(strSQL, "")
-            m_DT = ds.DataTable
-            Return 0
+
+            If ds.DataTable.Rows.Count <= 0 Then
+                m_ErrMsg = "枠網情報が存在しません。"
+                Return False
+            End If
+
+            For Each dtRow As DataRow In ds.DataTable.Rows
+                sWakuami = dtRow.Item("WAKU1").ToString & "," & _
+                           dtRow.Item("MESY1").ToString & "," & _
+                           dtRow.Item("WAKU2").ToString & "," & _
+                           dtRow.Item("MESY2").ToString & "," & _
+                           dtRow.Item("WAKU3").ToString & "," & _
+                           dtRow.Item("MESY3").ToString & "," & _
+                           dtRow.Item("WAKU4").ToString
+            Next
+
+            Return True
         Catch ex As SqlException
             m_ErrMsg = ex.Message
-            Return -9
+            Return False
         Finally
             Call ds.Dispose()
+        End Try
+    End Function
+
+    'MM52K更新
+    Public Function RegisterMM52K(ByVal strUpdText As String) As Boolean
+        Dim strSQL As String = ""
+        Dim arrUpdText As String() = Nothing
+        Dim ds As New clsDsCtrl
+
+        Try
+            arrUpdText = strUpdText.Split(",")
+
+            'SQL文作成
+            'Delete
+            strSQL = " DELETE MM52K@MTRSLINK "
+            strSQL &= " WHERE KIKCOD = '" & arrUpdText(0) & "' "
+
+            Call ds.Connect()
+            Call ds.ExecuteSQL(strSQL, "")
+
+            'Insert
+            strSQL = " INSERT INTO MM52K@MTRSLINK ( "
+            strSQL &= "  KIKCOD "
+            strSQL &= " ,WAKU1 "
+            strSQL &= " ,MESY1 "
+            strSQL &= " ,WAKU2 "
+            strSQL &= " ,MESY2 "
+            strSQL &= " ,WAKU3 "
+            strSQL &= " ,MESY3 "
+            strSQL &= " ,WAKU4 "
+            strSQL &= " ,ADDYMD "
+            strSQL &= " ,ADDHMS "
+            strSQL &= " )VALUES( "
+            For Each updText As String In arrUpdText
+                strSQL &= " '" & updText & "', "
+            Next
+            strSQL &= " '" & Now.ToString("yyyyMMdd") & "', "
+            strSQL &= " '" & Now.ToString("HHmmss") & "' "
+            strSQL &= " ) "
+
+            Call ds.ExecuteSQL(strSQL, "")
+            Return True
+        Catch ex As Exception
+            m_ErrMsg = ex.Message
+            Return False
         End Try
     End Function
 

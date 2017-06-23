@@ -53,21 +53,50 @@ Public Class ClientTcpIp
                     'クライアントから受信した値をもとに、処理を選択する
                     Select Case sCmdText
                         Case ProcessCommand.pc.SAG.ToString
-                            sSendData = sCmdText & dbAction.getSagyoName()
+                            Dim names As String = ""
+
+                            If dbAction.getSagyoName(names) Then
+                                sSendData = sCmdText & names
+                            Else
+                                Call WriteTextBox(dbAction.ErrMsg)
+                                sSendData = sErr & dbAction.ErrMsg
+                            End If
 
                         Case ProcessCommand.pc.KIK.ToString
                             If dbAction.checkKikai(sExcludeCmdText) Then
-                                'Vコンが存在している場合、受信データを送り返す
+                                '機械Noが存在している場合、受信データを送り返す
                                 sSendData = sCmdText & sExcludeCmdText
                             Else
-                                sSendData = sErr & "Vコンが存在しません。"
+                                Call WriteTextBox(dbAction.ErrMsg)
+                                sSendData = sErr & dbAction.ErrMsg
+                            End If
+
+                        Case ProcessCommand.pc.KOB.ToString
+                            Dim sSfcd As String = ""
+                            Dim sZainmk As String = ""
+                            Dim sWakuAmi As String = ""
+
+                            '受け取った工程管理番号から、処理粉情報を取得
+                            If dbAction.getSyoriInfo(sExcludeCmdText, sSfcd, sZainmk) Then
+                                '処理粉コードから枠網設定値を取得
+                                If dbAction.getWakuAmi(sSfcd, sWakuAmi) Then
+                                    '検索成功時は、受信メッセージに検索結果を付加して返す
+                                    sSendData = sCmdText & sExcludeCmdText & _
+                                                "," & sSfcd & _
+                                                "," & sZainmk & _
+                                                "," & sWakuAmi
+                                Else
+                                    sSendData = sErr & dbAction.ErrMsg
+                                End If
+                            Else
+                                sSendData = sErr & dbAction.ErrMsg
                             End If
 
                         Case ProcessCommand.pc.UPD.ToString
-                            If dbAction.Update(sExcludeCmdText) Then
-                                sSendData = sCmdText & "更新に成功しました。"
+                            If dbAction.RegisterMM52K(sExcludeCmdText) Then
+                                sSendData = sCmdText
                             Else
-                                sSendData = sCmdText & "更新失敗！"
+                                sSendData = sErr & "更新失敗！"
                             End If
 
                         Case Else
@@ -104,11 +133,11 @@ Public Class ClientTcpIp
         Dim sTextBox1 As String = _Form1.TextBox1.Text
 
         If sTextBox1 <> "" Then
-            sTextBox1 = sTextBox1 & vbCrLf
+            sTextBox1 = vbCrLf & sTextBox1
         End If
 
         '書き込み
-        _Form1.Invoke(TextBox1Delegate, New Object() {sTextBox1 & msg})
+        _Form1.Invoke(TextBox1Delegate, New Object() {msg & sTextBox1})
     End Sub
 
 End Class
