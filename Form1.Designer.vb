@@ -28,6 +28,7 @@ Partial Class Form1
         '
         'TextBox1
         '
+        Me.TextBox1.Enabled = False
         Me.TextBox1.Location = New System.Drawing.Point(12, 12)
         Me.TextBox1.Multiline = True
         Me.TextBox1.Name = "TextBox1"
@@ -41,7 +42,7 @@ Partial Class Form1
         Me.Button1.Name = "Button1"
         Me.Button1.Size = New System.Drawing.Size(75, 23)
         Me.Button1.TabIndex = 1
-        Me.Button1.Text = "Button1"
+        Me.Button1.Text = "Clear"
         Me.Button1.UseVisualStyleBackColor = True
         '
         'Form1

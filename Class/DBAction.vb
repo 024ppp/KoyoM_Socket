@@ -76,15 +76,13 @@ Public Class DBAction
             strSQL = " SELECT * "
             strSQL &= " FROM MM52K@MTRSLINK "
             strSQL &= " WHERE 1 = 1 "
-            If strKikai <> "" Then
-                strSQL &= " AND KIKCOD = '" & strKikai & "' "
-            End If
+            strSQL &= " AND KIKCOD = '" & strKikai & "' "
 
             Call ds.Connect()
             Call ds.ExecuteSQL(strSQL, "")
 
             If ds.DataTable.Rows.Count <= 0 Then
-                m_ErrMsg = "機械Noが存在しません。"
+                m_ErrMsg = "機械No(" & strKikai & ")は存在しません。"
                 Return False
             End If
 
@@ -106,7 +104,8 @@ Public Class DBAction
 
         Try
             If Not IsNumeric(sKokban) Then
-                Return ""
+                m_ErrMsg = "工管番号(" & sKokban & ")は不正です。"
+                Return False
             End If
 
             strSQL = " SELECT SFCD,ZAINMK "
@@ -120,7 +119,7 @@ Public Class DBAction
             Call ds.ExecuteSQL(strSQL, "")
 
             If ds.DataTable.Rows.Count <= 0 Then
-                m_ErrMsg = "工管番号が存在しません。"
+                m_ErrMsg = "工管番号(" & sKokban & ")は存在しません。"
                 Return False
             End If
 
@@ -179,7 +178,7 @@ Public Class DBAction
     End Function
 
     'MM52K更新
-    Public Function RegisterMM52K(ByVal strUpdText As String) As Boolean
+    Public Function updateMM52K(ByVal strUpdText As String) As Boolean
         Dim strSQL As String = ""
         Dim arrUpdText As String() = Nothing
         Dim ds As New clsDsCtrl

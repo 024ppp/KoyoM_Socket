@@ -58,7 +58,7 @@ Public Class ClientTcpIp
                             If dbAction.getSagyoName(names) Then
                                 sSendData = sCmdText & names
                             Else
-                                Call WriteTextBox(dbAction.ErrMsg)
+                                Call writeErrMsg(dbAction.ErrMsg)
                                 sSendData = sErr & dbAction.ErrMsg
                             End If
 
@@ -67,7 +67,6 @@ Public Class ClientTcpIp
                                 '機械Noが存在している場合、受信データを送り返す
                                 sSendData = sCmdText & sExcludeCmdText
                             Else
-                                Call WriteTextBox(dbAction.ErrMsg)
                                 sSendData = sErr & dbAction.ErrMsg
                             End If
 
@@ -93,18 +92,19 @@ Public Class ClientTcpIp
                             End If
 
                         Case ProcessCommand.pc.UPD.ToString
-                            If dbAction.RegisterMM52K(sExcludeCmdText) Then
+                            If dbAction.updateMM52K(sExcludeCmdText) Then
                                 sSendData = sCmdText
                             Else
-                                sSendData = sErr & "更新失敗！"
+                                sSendData = sErr & "更新失敗：" & dbAction.ErrMsg
                             End If
 
                         Case Else
                             sSendData = "case else"
                     End Select
 
-                    'フォームに書き出し
-                    Call WriteTextBox(msg & "-" & sSendData)
+                    ''フォームに書き出し(DEBUG)
+                    'Call writeErrMsg("Received:" & msg & vbCrLf _
+                    '                & "Send:" & sSendData)
 
                     sdat = System.Text.Encoding.GetEncoding("UTF-8").GetBytes(sSendData & vbCrLf)
                     ' ソケット送信
@@ -128,16 +128,27 @@ Public Class ClientTcpIp
         TextBox1Delegate = New SetTextBox1Delegate(AddressOf _Form1.SetTextBox1)
     End Sub
 
-    'テキストボックスに値を設定する
-    Public Sub WriteTextBox(ByVal msg As String)
-        Dim sTextBox1 As String = _Form1.TextBox1.Text
+    'エラーメッセージ表示
+    Public Sub writeErrMsg(ByVal msg As String)
+        Try
+            Dim sTextBox1 As String = _Form1.TextBox1.Text
 
-        If sTextBox1 <> "" Then
-            sTextBox1 = vbCrLf & sTextBox1
-        End If
+            If msg.Equals("") Then
+                Exit Sub
+            End If
 
-        '書き込み
-        _Form1.Invoke(TextBox1Delegate, New Object() {msg & sTextBox1})
+            '新規メッセージを一番上に配置するため
+            If sTextBox1 <> "" Then
+                sTextBox1 = vbCrLf & sTextBox1
+            End If
+
+            '書き込み
+            _Form1.Invoke(TextBox1Delegate, New Object() {msg & sTextBox1})
+
+        Catch ex As Exception
+            '書き込み
+            _Form1.Invoke(TextBox1Delegate, New Object() {ex.Message})
+        End Try
     End Sub
 
 End Class
